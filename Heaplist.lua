@@ -73,7 +73,7 @@ miII.onClick = function()
 
             if targetIs64Bit() then
                 local blank = heaplist.Items.add()
-                blank.setCaption(string.format("%X", readInteger(getAddressSafe(AM))))
+                blank.setCaption(string.format("%X", readQword(getAddressSafe(AM))))
                 blank.SubItems.add(string.format("%X", readInteger(getAddressSafe(AM + 0x08))))
                 blank.SubItems.add(string.format("%X", readByte(getAddressSafe(AM + 0x0C))))
                 blank.SubItems.add(string.format("%X", readByte(getAddressSafe(AM + 0x0D))))
@@ -99,7 +99,7 @@ miII.onClick = function()
 
             else
                 local blank = heaplist.Items.add()
-                blank.setCaption(string.format("%X", readInteger(getAddressSafe(AM))))
+                blank.setCaption(string.format("%X", readQword(getAddressSafe(AM))))
                 blank.SubItems.add(string.format("%X", readInteger(getAddressSafe(AM + 0x0004))))
                 blank.SubItems.add(string.format("%X", readByte(getAddressSafe(AM + 0x0008))))
                 blank.SubItems.add(string.format("%X", readByte(getAddressSafe(AM + 0x0009))))
