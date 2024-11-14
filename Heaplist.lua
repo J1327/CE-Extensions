@@ -156,7 +156,8 @@ miII.onClick = function()
     function GetProcessHeaps.Update()
         local s = 0
         local c = GetProcessHeaps._:Count()
-        local a = GetProcessHeaps._:GetProcessHeap() + 512 -- might lead to corruption?
+        AM = allocateMemory(0x1)
+        local a = AM -- might lead to corruption?
         executeCodeEx(nil, nil, 'GetProcessHeaps', c, a)
         local low, high = s, s
         local d
@@ -197,6 +198,8 @@ miII.onClick = function()
         if GetProcessHeaps.Low == nil or high ~= tonumber(GetProcessHeaps.Low, 16) then
             GetProcessHeaps.Low = string.format("%X", low)
         end
+
+deAlloc(AM)
 
         -- In case in need , don't repeat yourself
         local _ = {
