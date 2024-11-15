@@ -1,8 +1,11 @@
+if heapform then heapform.show() return end
 heapform = createForm()
-heapform.setCaption("Heaplist v20241022124237") -- prev. was v20241021074232
+heapform.setCaption("Heaplist v20241115224109") -- prev. was v20241022124237
 heapform.setBorderStyle(2)
 heapform.setSize(800, 600)
 heapform.setPosition(getScreenHeight() / 2, getScreenHeight() / 2)
+
+heapform.onClose = function(self) self.Hide() end 
 
 heaplist = createListView(heapform)
 heaplist.RowSelect = true
@@ -33,13 +36,13 @@ local tmp = heaplist.Columns.add()
 tmp.Caption = "Flags"
 tmp.width = 250
 local tmp = heaplist.Columns.add()
-tmp.Caption = "Parent Region"
+tmp.Caption = "Allocation Base"
 tmp.width = 150
 local tmp = heaplist.Columns.add()
-tmp.Caption = "Parent Base Region"
+tmp.Caption = "Base"
 tmp.width = 185
 local tmp = heaplist.Columns.add()
-tmp.Caption = "Parent Region Size"
+tmp.Caption = "Size"
 tmp.width = 185
 
 heapform.Menu = createMainMenu(heapform)
@@ -59,17 +62,21 @@ miII.onClick = function()
         registerSymbol('PMEMORY_BASIC_INFORMATION', SUB_AM)
 
         local PROCESS_HEAP = executeCodeEx(nil, nil, 'GetProcessHeap')
-        local isStuck, structure
+        local isStuck , isValid
+        local notStuck = 0
         while true do
             if not readInteger(PROCESS_HEAP) then
-                return error("Probably heap got deallocated or reallocated")
+                return error("")
+            end
+            if not executeCodeEx(nil, nil, 'HeapValidate', PROCESS_HEAP, 0x0,notStuck) then -- before accessing next address validate previous
+                return error("")
             end
             executeCodeEx(nil, nil, 'HeapWalk', PROCESS_HEAP, AM)
-            structure = readQword(AM)
-            if structure == isStuck then
+            notStuck = readQword(AM)
+            if notStuck == isStuck then
                 break
             end
-            executeCodeEx(nil, nil, getAddress("VirtualQuery"), structure, SUB_AM, 0x64)
+            executeCodeEx(nil, nil, getAddress("VirtualQuery"), notStuck, SUB_AM, 0x64)
 
             if targetIs64Bit() then
                 local blank = heaplist.Items.add()
@@ -91,15 +98,15 @@ miII.onClick = function()
                 elseif tmp == '20' then
                     blank.SubItems.add('PROCESS_HEAP_ENTRY_DDESHARE')
                 else
-                    print(tmp)
+                    blank.SubItems.add(tmp)
                 end
-                blank.SubItems.add(string.format("%X", readQword(getAddress('PMEMORY_BASIC_INFORMATION'))))
                 blank.SubItems.add(string.format("%X", readQword(getAddress('PMEMORY_BASIC_INFORMATION+0x0008'))))
+                blank.SubItems.add(string.format("%X", readQword(getAddress('PMEMORY_BASIC_INFORMATION'))))
                 blank.SubItems.add(string.format("%X", readQword(getAddress('PMEMORY_BASIC_INFORMATION+0x0018'))))
 
             else
                 local blank = heaplist.Items.add()
-                blank.setCaption(string.format("%X", readQword(getAddressSafe(AM))))
+                blank.setCaption(string.format("%X", readInteger(getAddressSafe(AM))))
                 blank.SubItems.add(string.format("%X", readInteger(getAddressSafe(AM + 0x0004))))
                 blank.SubItems.add(string.format("%X", readByte(getAddressSafe(AM + 0x0008))))
                 blank.SubItems.add(string.format("%X", readByte(getAddressSafe(AM + 0x0009))))
@@ -120,12 +127,12 @@ miII.onClick = function()
                     blank.SubItems.add(tmp)
                 end
 
-                blank.SubItems.add(string.format("%X", readInteger(getAddress('PMEMORY_BASIC_INFORMATION'))))
                 blank.SubItems.add(string.format("%X", readInteger(getAddress('PMEMORY_BASIC_INFORMATION+0x04'))))
-                blank.SubItems.add(string.format("%X", readInteger(getAddress('PMEMORY_BASIC_INFORMATION+0x10'))))
+                blank.SubItems.add(string.format("%X", readInteger(getAddress('PMEMORY_BASIC_INFORMATION'))))
+                blank.SubItems.add(string.format("%X", readInteger(getAddress('PMEMORY_BASIC_INFORMATION+0x0C'))))
             end
 
-            isStuck = structure
+            isStuck = notStuck
         end
         deAlloc(AM);
         unregisterSymbol('PROCESS_HEAP_ENTRY');
@@ -156,6 +163,7 @@ miII.onClick = function()
     function GetProcessHeaps.Update()
         local s = 0
         local c = GetProcessHeaps._:Count()
+
         AM = allocateMemory(0x1)
         local a = AM -- might lead to corruption?
         executeCodeEx(nil, nil, 'GetProcessHeaps', c, a)
@@ -199,7 +207,7 @@ miII.onClick = function()
             GetProcessHeaps.Low = string.format("%X", low)
         end
 
-deAlloc(AM)
+        deAlloc(AM)
 
         -- In case in need , don't repeat yourself
         local _ = {
@@ -243,10 +251,8 @@ deAlloc(AM)
         end
         local adr = GetProcessHeaps[id]
         if not readInteger(adr) then
-            error("This heap " .. adr .. " as address is unreadable - Probably no access memory region")
+            error("")
         end
-        local waitfor = heapform.getCaption()
-        heapform.setCaption(waitfor .. " Currently Checking ..." .. adr)
         createThread(function() -- TAKES TOO MUCH TIME CLEANING AND WRITING
             heaplist.items.clear()
             AM = allocateMemory(0x1);
@@ -254,22 +260,29 @@ deAlloc(AM)
             SUB_AM = allocateMemory(0x1)
             registerSymbol('PMEMORY_BASIC_INFORMATION', SUB_AM)
 
-            local PROCESS_HEAP = getAddress(adr)
-            local isStuck, structure
+            local PROCESS_HEAP = executeCodeEx(nil, nil, 'GetProcessHeap')
+            local isStuck , isValid
+            local notStuck = 0
             while true do
                 if not readInteger(PROCESS_HEAP) then
-                    return error("Probably heap got deallocated or reallocated")
+                    return error("")
+                end
+                if not executeCodeEx(nil, nil, 'HeapValidate', PROCESS_HEAP, 0x0,notStuck) then -- before accessing next address validate previous
+                    return error("")
                 end
                 executeCodeEx(nil, nil, 'HeapWalk', PROCESS_HEAP, AM)
-                structure = readQword(AM)
-                if structure == isStuck then
+                notStuck = readQword(AM)
+                if notStuck == isStuck then
                     break
                 end
-                executeCodeEx(nil, nil, getAddress("VirtualQuery"), structure, SUB_AM, 0x64)
+
+
+
+                executeCodeEx(nil, nil, getAddress("VirtualQuery"), notStuck, SUB_AM, 0x64)
 
                 if targetIs64Bit() then
                     local blank = heaplist.Items.add()
-                    blank.setCaption(string.format("%X", readInteger(getAddressSafe(AM))))
+                    blank.setCaption(string.format("%X", readQword(getAddressSafe(AM))))
                     blank.SubItems.add(string.format("%X", readInteger(getAddressSafe(AM + 0x08))))
                     blank.SubItems.add(string.format("%X", readByte(getAddressSafe(AM + 0x0C))))
                     blank.SubItems.add(string.format("%X", readByte(getAddressSafe(AM + 0x0D))))
@@ -287,10 +300,10 @@ deAlloc(AM)
                     elseif tmp == '20' then
                         blank.SubItems.add('PROCESS_HEAP_ENTRY_DDESHARE')
                     else
-                        print(tmp)
+                        blank.SubItems.add(tmp)
                     end
-                    blank.SubItems.add(string.format("%X", readQword(getAddress('PMEMORY_BASIC_INFORMATION'))))
                     blank.SubItems.add(string.format("%X", readQword(getAddress('PMEMORY_BASIC_INFORMATION+0x0008'))))
+                    blank.SubItems.add(string.format("%X", readQword(getAddress('PMEMORY_BASIC_INFORMATION'))))
                     blank.SubItems.add(string.format("%X", readQword(getAddress('PMEMORY_BASIC_INFORMATION+0x0018'))))
 
                 else
@@ -315,12 +328,12 @@ deAlloc(AM)
                     else
                         blank.SubItems.add(tmp)
                     end
-                    blank.SubItems.add(string.format("%X", readInteger(getAddress('PMEMORY_BASIC_INFORMATION'))))
                     blank.SubItems.add(string.format("%X", readInteger(getAddress('PMEMORY_BASIC_INFORMATION+0x04'))))
-                    blank.SubItems.add(string.format("%X", readInteger(getAddress('PMEMORY_BASIC_INFORMATION+0x10'))))
+                    blank.SubItems.add(string.format("%X", readInteger(getAddress('PMEMORY_BASIC_INFORMATION'))))
+                    blank.SubItems.add(string.format("%X", readInteger(getAddress('PMEMORY_BASIC_INFORMATION+0x0C'))))
                 end
 
-                isStuck = structure
+                isStuck = notStuck
             end
             deAlloc(AM);
             unregisterSymbol('PROCESS_HEAP_ENTRY');
@@ -329,6 +342,6 @@ deAlloc(AM)
             unregisterSymbol('PMEMORY_BASIC_INFORMATION')
             SUB_AM = nil;
         end)
-        heapform.setCaption(waitfor)
     end
 end
+
