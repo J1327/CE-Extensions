@@ -1,206 +1,239 @@
 if not x1327 then
     x1327 = {}
-    local mi = createMenuItem(MainForm.MainMenu1)
-    mi.Caption = "Auto Backup Save Folder"
-    mi.onClick = function()
-        if (not x1327.AutoSaveFileMaker) then
-            x1327.AutoSaveFileMaker = createForm()
-            x1327.AutoSaveFileMaker.setCaption("Auto backup save folder")
-            x1327.AutoSaveFileMaker.setSize(600, 400)
-            -- x1327.AutoSaveFileMaker.setBorderStyle(2)
-            x1327.AutoSaveFileMaker.onClose = function()
-                x1327.AutoSaveFileMaker.hide()
+
+    local menuItem = createMenuItem(MainForm.MainMenu1)
+    menuItem.Caption = "Auto Backup Save Folder"
+
+    menuItem.onClick = function()
+        if not x1327.AutoSaveFileMaker then
+            local backupForm = createForm()
+            x1327.AutoSaveFileMaker = backupForm
+
+            backupForm.setCaption("Auto backup save folder")
+            backupForm.setSize(600, 400)
+            backupForm.onClose = function()
+                backupForm.hide()
             end
 
-            x1327.AutoSaveFileMaker.OCB = createComboBox(x1327.AutoSaveFileMaker)
-            x1327.AutoSaveFileMaker.OCB.setWidth(400)
-            x1327.AutoSaveFileMaker.OCB.setTop(50)
+            -- Game selector
+            local gameSelect = createComboBox(backupForm)
+            gameSelect.setWidth(400)
+            gameSelect.setTop(50)
+            backupForm.GameSelect = gameSelect
 
-            x1327.AutoSaveFileMaker.Info = createLabel(x1327.AutoSaveFileMaker)
-            x1327.AutoSaveFileMaker.Info.Caption =
-                [[Will look for Save path automatically. If exist in local database.]]
+            local infoLabel = createLabel(backupForm)
+            infoLabel.Caption = [[Will look for Save path automatically. If exist in local database.]]
+            backupForm.InfoLabel = infoLabel
 
-            x1327.AutoSaveFileMaker.SavePath = createEdit(x1327.AutoSaveFileMaker)
-            x1327.AutoSaveFileMaker.SavePath.setPosition(0, 100)
-            x1327.AutoSaveFileMaker.SavePath.setWidth(400)
-            x1327.AutoSaveFileMaker.SavePath.ReadOnly = true
+            -- Save path
+            local savePathEdit = createEdit(backupForm)
+            savePathEdit.setPosition(0, 100)
+            savePathEdit.setWidth(400)
+            savePathEdit.ReadOnly = true
+            backupForm.SavePathEdit = savePathEdit
 
-            x1327.AutoSaveFileMaker.LocalPathBTN = createButton(x1327.AutoSaveFileMaker)
-            x1327.AutoSaveFileMaker.LocalPathBTN.setCaption("[[...]]")
-            x1327.AutoSaveFileMaker.LocalPathBTN.setPosition(400, 100)
-            x1327.AutoSaveFileMaker.LocalPathBTN.setWidth(200)
-            x1327.AutoSaveFileMaker.LocalPathBTN.setHeight(32)
-            x1327.AutoSaveFileMaker.LocalPathBTN.onClick = function()
-                local LDII = createSelectDirectoryDialog()
-                if LDII.Execute() then
-                    x1327.AutoSaveFileMaker.SavePath.Text = LDII.FileName
+            local browseSavePathBtn = createButton(backupForm)
+            browseSavePathBtn.setCaption("[[...]]")
+            browseSavePathBtn.setPosition(400, 100)
+            browseSavePathBtn.setWidth(200)
+            browseSavePathBtn.setHeight(32)
+            browseSavePathBtn.onClick = function()
+                local dirDialog = createSelectDirectoryDialog()
+                if dirDialog.Execute() then
+                    savePathEdit.Text = dirDialog.FileName
                 end
             end
+            backupForm.BrowseSavePathBtn = browseSavePathBtn
 
-            x1327.AutoSaveFileMaker.OutputPath = createEdit(x1327.AutoSaveFileMaker)
-            x1327.AutoSaveFileMaker.OutputPath.setPosition(0, 150)
-            x1327.AutoSaveFileMaker.OutputPath.setWidth(400)
-            x1327.AutoSaveFileMaker.OutputPath.ReadOnly = true
+            -- Output path
+            local outputPathEdit = createEdit(backupForm)
+            outputPathEdit.setPosition(0, 150)
+            outputPathEdit.setWidth(400)
+            outputPathEdit.ReadOnly = true
+            backupForm.OutputPathEdit = outputPathEdit
 
-            x1327.AutoSaveFileMaker.LocalOutPathBTN = createButton(x1327.AutoSaveFileMaker)
-            x1327.AutoSaveFileMaker.LocalOutPathBTN.setCaption("[[...]]")
-            x1327.AutoSaveFileMaker.LocalOutPathBTN.setPosition(400, 150)
-            x1327.AutoSaveFileMaker.LocalOutPathBTN.setWidth(200)
-            x1327.AutoSaveFileMaker.LocalOutPathBTN.setHeight(32)
-            x1327.AutoSaveFileMaker.LocalOutPathBTN.onClick = function()
-                local LDII = createSelectDirectoryDialog()
-                if LDII.Execute() then
-                    x1327.AutoSaveFileMaker.OutputPath.Text = LDII.FileName
+            local browseOutputPathBtn = createButton(backupForm)
+            browseOutputPathBtn.setCaption("[[...]]")
+            browseOutputPathBtn.setPosition(400, 150)
+            browseOutputPathBtn.setWidth(200)
+            browseOutputPathBtn.setHeight(32)
+            browseOutputPathBtn.onClick = function()
+                local dirDialog = createSelectDirectoryDialog()
+                if dirDialog.Execute() then
+                    outputPathEdit.Text = dirDialog.FileName
                 end
             end
+            backupForm.BrowseOutputPathBtn = browseOutputPathBtn
 
-            x1327.AutoSaveFileMaker.Info2 = createLabel(x1327.AutoSaveFileMaker)
-            x1327.AutoSaveFileMaker.Info2.setPosition(25, 365)
-            x1327.AutoSaveFileMaker.Info2.setCaption("Note that this uses timers --...")
+            local infoLabel2 = createLabel(backupForm)
+            infoLabel2.setPosition(25, 365)
+            infoLabel2.setCaption("Note that this uses timers --...")
+            backupForm.InfoLabel2 = infoLabel2
 
-            x1327.AutoSaveFileMaker.RunSaveLoop = createButton(x1327.AutoSaveFileMaker)
-            x1327.AutoSaveFileMaker.RunSaveLoop.setPosition(0, 325)
-            x1327.AutoSaveFileMaker.RunSaveLoop.setWidth(600)
-            x1327.AutoSaveFileMaker.RunSaveLoop.setHeight(32)
-            x1327.AutoSaveFileMaker.RunSaveLoop.setCaption("Run Auto Backup routine -- Currently [DISABLED]")
-            x1327.AutoSaveFileMaker.RunSaveLoop.OnClick = function()
-                if
-                    (not x1327.AutoSaveFileMaker.Routine.Enabled and x1327.AutoSaveFileMaker.OutputPath.Text ~= "" and
-                        x1327.AutoSaveFileMaker.SavePath.Text ~= "" and
-                        x1327.AutoSaveFileMaker.Templess.Text ~= "")
-                 then
-                    x1327.AutoSaveFileMaker.Routine.Enabled = true
-                    x1327.AutoSaveFileMaker.RunSaveLoop.setCaption("Run Auto Backup routine -- Currently [ENABLED]")
-                    x1327.AutoSaveFileMaker.LocalOutPathBTN.Enabled = false
-                    x1327.AutoSaveFileMaker.LocalPathBTN.Enabled = false
-                    x1327.AutoSaveFileMaker.OCB.Enabled = false
-                    x1327.AutoSaveFileMaker.Templess.Enabled = false
-                else
-                    x1327.AutoSaveFileMaker.Routine.Enabled = false
-                    x1327.AutoSaveFileMaker.RunSaveLoop.setCaption("Run Auto Backup routine -- Currently [DISABLED]")
-                    x1327.AutoSaveFileMaker.LocalOutPathBTN.Enabled = true
-                    x1327.AutoSaveFileMaker.LocalPathBTN.Enabled = true
-                    x1327.AutoSaveFileMaker.OCB.Enabled = true
-                    x1327.AutoSaveFileMaker.Templess.Enabled = true
-                    x1327.AutoSaveFileMaker.NextSeq.setCaption(" ")
-                    x1327.AutoSaveFileMaker.Routine.Interval = 1000 -- reset
-                end
+            -- Enable / Disable routine button
+            local toggleRoutineBtn = createButton(backupForm)
+            toggleRoutineBtn.setPosition(0, 325)
+            toggleRoutineBtn.setWidth(600)
+            toggleRoutineBtn.setHeight(32)
+            toggleRoutineBtn.setCaption("Run Auto Backup routine -- Currently [DISABLED]")
+            backupForm.ToggleRoutineBtn = toggleRoutineBtn
+
+            -- Temp folder name
+            local tempFolderEdit = createEdit(backupForm)
+            tempFolderEdit.setPosition(0, 200)
+            tempFolderEdit.setWidth(400)
+            backupForm.TempFolderEdit = tempFolderEdit
+
+            local tempFolderLabel = createLabel(backupForm)
+            tempFolderLabel.setPosition(400, 200)
+            tempFolderLabel.setCaption("<-- Temp folder name")
+            backupForm.TempFolderLabel = tempFolderLabel
+
+            -- Interval
+            local intervalEdit = createEdit(backupForm)
+            intervalEdit.setPosition(0, 250)
+            intervalEdit.setWidth(400)
+            intervalEdit.NumbersOnly = true
+            intervalEdit.Text = 300000
+            backupForm.IntervalEdit = intervalEdit
+
+            local intervalLabel = createLabel(backupForm)
+            intervalLabel.setPosition(400, 250)
+            intervalLabel.setCaption("<-- How often")
+            backupForm.IntervalLabel = intervalLabel
+
+            -- Database
+            backupForm.Database = {
+                {"The Dark Pictures Anthology: Little Hope", [[%LOCALAPPDATA%\LittleHope\Saved\SaveGames\]], "LittleHope"},
+                {"The Dark Pictures Anthology: Man of Medan", [[%LOCALAPPDATA%\ManOfMedan\Saved\SaveGames\]], "ManOfMedan"},
+                {"The Dark Pictures Anthology: House of Ashes", [[%LOCALAPPDATA%\HouseOfAshes\Saved\SaveGames\]], "HouseOfAshes"},
+                {"The Dark Pictures Anthology: The Devil in Me", [[%LOCALAPPDATA%\TheDevilInMe\Saved\SaveGames\]], "TheDevilInMe"},
+                {"Crusader Kings III", [[%USERPROFILE%\Documents\Paradox Interactive\Crusader Kings III\]], "CKIII"},
+                {"Kingdom Come: Deliverance", [[%USERPROFILE%\Saved Games\kingdomcome\saves\]], "KingdomCome"},
+                {"The Casting of Frank Stone", [[%LOCALAPPDATA%\TheCastingofFrankStone\Saved\SaveGames\]], "TheCastingofFrankStone"},
+            }
+
+            for i = 1, #backupForm.Database do
+                gameSelect.Items.addText(backupForm.Database[i][1])
             end
 
-            x1327.AutoSaveFileMaker.Templess = createEdit(x1327.AutoSaveFileMaker)
-            x1327.AutoSaveFileMaker.Templess.setPosition(0, 200)
-            x1327.AutoSaveFileMaker.Templess.setWidth(400)
-
-            x1327.AutoSaveFileMaker.info3 = createLabel(x1327.AutoSaveFileMaker)
-            x1327.AutoSaveFileMaker.info3.setPosition(400, 200)
-            x1327.AutoSaveFileMaker.info3.setCaption("<-- Temp folder name")
-
-            x1327.AutoSaveFileMaker.Oftenless = createEdit(x1327.AutoSaveFileMaker)
-            x1327.AutoSaveFileMaker.Oftenless.setPosition(0, 250)
-            x1327.AutoSaveFileMaker.Oftenless.setWidth(400)
-            x1327.AutoSaveFileMaker.Oftenless.NumbersOnly = true
-            x1327.AutoSaveFileMaker.Oftenless.Text = 300000 -- 5 Min (1000 = 1 sec or 60000 = 1min)
-
-            x1327.AutoSaveFileMaker.label5 = createLabel(x1327.AutoSaveFileMaker)
-            x1327.AutoSaveFileMaker.label5.setPosition(400, 250)
-            x1327.AutoSaveFileMaker.label5.setCaption("<-- How often")
-
-            x1327.AutoSaveFileMaker.Database = { -- {"Application title","SAVE PATH LOCATION","TempFolderName"}
-        -- note you can use os.getenv("LOCALAPPDATA") instead of %LOCALAPPDATA% -- anyway it is still sent to cmd line
-        {"The Dark Pictures Anthology: Little Hope", [[%LOCALAPPDATA%\LittleHope\Saved\SaveGames\]], "LittleHope"},
-        {"The Dark Pictures Anthology: Man of Medan", [[%LOCALAPPDATA%\ManOfMedan\Saved\SaveGames\]], "ManOfMedan"},
-        {"The Dark Pictures Anthology: House of Ashes", [[%LOCALAPPDATA%\HouseOfAshes\Saved\SaveGames\]], "HouseOfAshes"},
-        {"The Dark Pictures Anthology: The Devil in Me", [[%LOCALAPPDATA%\TheDevilInMe\Saved\SaveGames\]],"TheDevilInMe"},
-        {"Crusader Kings III", [[%USERPROFILE%\Documents\Paradox Interactive\Crusader Kings III\]], "CKIII"},
-        {"Kingdom Come: Deliverance", [[%USERPROFILE%\Saved Games\kingdomcome\saves\]], "KingdomCome"},
-        {"The Casting of Frank Stone", [[%LOCALAPPDATA%\TheCastingofFrankStone\Saved\SaveGames\]], "TheCastingofFrankStone"},
-        }
-
-            -- process info from LOCAL database
-            for i = 1, #x1327.AutoSaveFileMaker.Database do
-                x1327.AutoSaveFileMaker.OCB.Items.addText(x1327.AutoSaveFileMaker.Database[i][1])
-            end
-
-            x1327.AutoSaveFileMaker.OCB.OnChange = function()
-                -- read database table -- on request
-                for i = 1, #x1327.AutoSaveFileMaker.Database do
-                    if x1327.AutoSaveFileMaker.OCB.Text == x1327.AutoSaveFileMaker.Database[i][1] then
-                        x1327.AutoSaveFileMaker.SavePath.Text = x1327.AutoSaveFileMaker.Database[i][2]
-                        x1327.AutoSaveFileMaker.Templess.Text = x1327.AutoSaveFileMaker.Database[i][3]
+            gameSelect.OnChange = function()
+                for i = 1, #backupForm.Database do
+                    if gameSelect.Text == backupForm.Database[i][1] then
+                        savePathEdit.Text = backupForm.Database[i][2]
+                        tempFolderEdit.Text = backupForm.Database[i][3]
                         break
                     end
                 end
             end
 
-            x1327.AutoSaveFileMaker.NextSeq = createLabel(x1327.AutoSaveFileMaker)
-            x1327.AutoSaveFileMaker.NextSeq.setPosition(25, 295)
+            local nextRunLabel = createLabel(backupForm)
+            nextRunLabel.setPosition(25, 295)
+            backupForm.NextRunLabel = nextRunLabel
 
-            -- create backup routine
-            x1327.AutoSaveFileMaker.Routine = createTimer(x1327.AutoSaveFileMaker)
-            x1327.AutoSaveFileMaker.Routine.Interval = 1000
-            x1327.AutoSaveFileMaker.Routine.Enabled = false
-            x1327.AutoSaveFileMaker.Routine.OnTimer = function()
-                x1327.AutoSaveFileMaker.Moveless =
+            -- Timer routine
+            local backupTimer = createTimer(backupForm)
+            backupTimer.Interval = 1000
+            backupTimer.Enabled = false
+            backupForm.BackupTimer = backupTimer
+
+            backupTimer.OnTimer = function()
+                local copyCmd =
                     [[ /c robocopy "]] ..
-                    x1327.AutoSaveFileMaker.SavePath.Text ..
-                        ' " "' ..
-                            x1327.AutoSaveFileMaker.OutputPath.Text ..
-                                "\\" .. x1327.AutoSaveFileMaker.Templess.Text .. ' " /E'
-                x1327.AutoSaveFileMaker.Loveless =
-                    [[ tar -czvf ]] ..
-                    '"' ..
-                        x1327.AutoSaveFileMaker.OutputPath.Text ..
-                            "\\" ..
-                                os.time() ..
-                                    "_B_" ..
-                                        tostring(process) ..
-                                            "_" ..
-                                                tostring(x1327.AutoSaveFileMaker.Templess.Text) ..
-                                                    "_" ..
-                                                        [[.tar.gz" -C "]] ..
-                                                            x1327.AutoSaveFileMaker.OutputPath.Text ..
-                                                                '" "' ..
-                                                                    x1327.AutoSaveFileMaker.Templess.Text .. '"' .. "" -- This will be sent to compress
-                x1327.AutoSaveFileMaker.Removeless =
-                    [[rmdir /s /q ]] ..
-                    [["]] ..
-                        x1327.AutoSaveFileMaker.OutputPath.Text .. "\\" .. x1327.AutoSaveFileMaker.Templess.Text .. '"' -- remove temp folder
-                x1327.AutoSaveFileMaker.Lineless =
-                    x1327.AutoSaveFileMaker.Moveless ..
-                    " & " .. x1327.AutoSaveFileMaker.Loveless .. " & " .. x1327.AutoSaveFileMaker.Removeless
-                shellExecute("cmd.exe", x1327.AutoSaveFileMaker.Lineless, nil, false)
-                x1327.AutoSaveFileMaker.Routine.Interval = x1327.AutoSaveFileMaker.Oftenless.Text
-                x1327.AutoSaveFileMaker.NextSeq.setCaption(
-                    "Next save will be generated approximately at " .. os.date("%Y-%m-%d %H:%M:%S", os.time() + 300)
+                    savePathEdit.Text ..
+                    [[" "]] ..
+                    outputPathEdit.Text .. "\\" .. tempFolderEdit.Text .. [[" /E]]
+
+                local archiveCmd =
+                    [[ tar -czvf "]] ..
+                    outputPathEdit.Text ..
+                    "\\" ..
+                    os.time() ..
+                    "_B_" ..
+                    tostring(process) ..
+                    "_" ..
+                    tempFolderEdit.Text ..
+                    [[.tar.gz" -C "]] ..
+                    outputPathEdit.Text ..
+                    [[" "]] ..
+                    tempFolderEdit.Text .. [["]]
+
+                local cleanupCmd =
+                    [[rmdir /s /q "]] ..
+                    outputPathEdit.Text ..
+                    "\\" ..
+                    tempFolderEdit.Text ..
+                    [["]]
+
+                local fullCmd = copyCmd .. " & " .. archiveCmd .. " & " .. cleanupCmd
+                shellExecute("cmd.exe", fullCmd, nil, false)
+
+                backupTimer.Interval = intervalEdit.Text
+                nextRunLabel.setCaption(
+                    "Next save will be generated approximately at " ..
+                    os.date("%Y-%m-%d %H:%M:%S", os.time() + 300)
                 )
             end
 
-            x1327.AutoSaveFileMaker.LoadCFG = createButton(x1327.AutoSaveFileMaker)
-            x1327.AutoSaveFileMaker.LoadCFG.setPosition(400, 50)
-            x1327.AutoSaveFileMaker.LoadCFG.setHeight(34)
-            x1327.AutoSaveFileMaker.LoadCFG.setWidth(200)
-            x1327.AutoSaveFileMaker.LoadCFG.setCaption("[[...]]")
-            x1327.AutoSaveFileMaker.LoadCFG.OnClick = function()
-                x1327.AutoSaveFileMaker.OCB.clear()
-                local LDII = createOpenDialog()
-                LDII.defaultExt = ".LUA"
-                LDII.Filter = [[Lua programing file (*.LUA)|*.lua]]
-                local LDI
-                if LDII.Execute() then
-                    LDI = createStringList()
-                    LDI.add(io.open(LDII.FileName, "r"):read("*all"))
+            toggleRoutineBtn.OnClick = function()
+                if
+                    (not backupTimer.Enabled and
+                        outputPathEdit.Text ~= "" and
+                        savePathEdit.Text ~= "" and
+                        tempFolderEdit.Text ~= "")
+                then
+                    backupTimer.Enabled = true
+                    toggleRoutineBtn.setCaption("Run Auto Backup routine -- Currently [ENABLED]")
+                    browseOutputPathBtn.Enabled = false
+                    browseSavePathBtn.Enabled = false
+                    gameSelect.Enabled = false
+                    tempFolderEdit.Enabled = false
+                else
+                    backupTimer.Enabled = false
+                    toggleRoutineBtn.setCaption("Run Auto Backup routine -- Currently [DISABLED]")
+                    browseOutputPathBtn.Enabled = true
+                    browseSavePathBtn.Enabled = true
+                    gameSelect.Enabled = true
+                    tempFolderEdit.Enabled = true
+                    nextRunLabel.setCaption(" ")
+                    backupTimer.Interval = 1000
                 end
-                load(LDI.Text)()
+            end
 
-                for i = 1, #x1327.AutoSaveFileMaker.Database do
-                    x1327.AutoSaveFileMaker.OCB.Items.addText(x1327.AutoSaveFileMaker.Database[i][1])
+            -- Load config
+            local loadConfigBtn = createButton(backupForm)
+            loadConfigBtn.setPosition(400, 50)
+            loadConfigBtn.setHeight(34)
+            loadConfigBtn.setWidth(200)
+            loadConfigBtn.setCaption("[[...]]")
+            backupForm.LoadConfigBtn = loadConfigBtn
+
+            loadConfigBtn.OnClick = function()
+                gameSelect.clear()
+
+                local openDialog = createOpenDialog()
+                openDialog.defaultExt = ".LUA"
+                openDialog.Filter = [[Lua programing file (*.LUA)|*.lua]]
+
+                local fileContent
+                if openDialog.Execute() then
+                    local sl = createStringList()
+                    sl.add(io.open(openDialog.FileName, "r"):read("*all"))
+                    fileContent = sl.Text
                 end
 
-                return beep()
+                load(fileContent)()
+
+                for i = 1, #backupForm.Database do
+                    gameSelect.Items.addText(backupForm.Database[i][1])
+                end
+
+                beep()
             end
         else
             x1327.AutoSaveFileMaker.show()
         end
     end
-    MainForm.MainMenu1.Items.add(mi)
+
+    MainForm.MainMenu1.Items.add(menuItem)
 end
