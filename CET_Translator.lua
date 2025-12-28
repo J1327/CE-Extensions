@@ -1,5 +1,4 @@
-
-local function url_encode(str)
+local function urlEncode(str)
     if str then
         str = str:gsub("\n", "\r\n")
         str = str:gsub("([^%w _%%%-%.~])", function(c)
@@ -10,192 +9,202 @@ local function url_encode(str)
     return str
 end
 
-TForm = createForm()
-TForm.setSize(500, 500)
-TForm.setCaption("Translate Cheat Table")
 
-TForm.Function = {function(str)
-    if str then
-        str = str:gsub("\n", "\r\n")
-        str = str:gsub("([^%w _%%%-%.~])", function(c)
-            return string.format("%%%02X", string.byte(c))
-        end)
-        str = str:gsub(" ", "+")
+local mainForm = createForm()
+mainForm.setSize(500, 500)
+mainForm.setCaption("Translate Cheat Table")
+
+mainForm.Function = {
+
+    function(text)
+        if text then
+            text = text:gsub("\n", "\r\n")
+            text = text:gsub("([^%w _%%%-%.~])", function(c)
+                return string.format("%%%02X", string.byte(c))
+            end)
+            text = text:gsub(" ", "+")
+        end
+        return text
+    end,
+
+
+    function(response)
+        local startPos, endPos = response:find('%[%["')
+        if ((not startPos) and response:find('%["') == nil) then
+            return nil
+        else
+            startPos, endPos = response:find('%["')
+        end
+
+        local closePos = response:find('"', endPos + 1)
+        if not closePos then
+            return nil
+        end
+
+        return response:sub(endPos + 1, closePos - 1)
+    end,
+
+    function(longText)
+        local lines = {}
+        for line in longText:gmatch("[^\n]+") do
+            table.insert(lines, line)
+        end
+        return lines
     end
-    return str
-end, function(q)
-    local SP, EP = q:find('%[%["')
-    if ((not start_pos) and q:find('%["') == nil) then
-        return nil
-    else
-        SP, EP = q:find('%["')
+}
+
+
+local serviceSelect = createComboBox(mainForm)
+serviceSelect.setPosition(25, 100)
+serviceSelect.setWidth(400)
+serviceSelect.Text = "Google Translate 5"
+serviceSelect.Items.add("Google Translate 5")
+serviceSelect.ReadOnly = true
+mainForm.SrvSelecta = serviceSelect
+
+
+local fromLangSelect = createComboBox(mainForm)
+fromLangSelect.setPosition(25, 185)
+fromLangSelect.setWidth(400)
+fromLangSelect.Text = "auto"
+for _, lang in ipairs({
+    "auto","lt","en","de","fr","ja","zh-TW","zh-CN","ko","ru","th","uk"
+}) do
+    fromLangSelect.Items.add(lang)
+end
+fromLangSelect.ReadOnly = true
+mainForm.FromSelecta = fromLangSelect
+
+
+local toLangSelect = createComboBox(mainForm)
+toLangSelect.setPosition(25, 275)
+toLangSelect.setWidth(400)
+toLangSelect.Text = "lt"
+for _, lang in ipairs({
+    "lt","en","de","fr","ja","zh-TW","zh-CN","ko","ru","th","uk"
+}) do
+    toLangSelect.Items.add(lang)
+end
+toLangSelect.ReadOnly = true
+mainForm.ToSelecta = toLangSelect
+
+
+local translateButton = createButton(mainForm)
+translateButton.setHeight(50)
+translateButton.setWidth(200)
+translateButton.setCaption("Try Translate")
+translateButton.setPosition(25, 400)
+mainForm.RunSrv = translateButton
+
+translateButton.onClick = function()
+    local descriptionList = createStringlist()
+    for i = 0, AddressList.Count - 1 do
+        descriptionList.add(AddressList.getMemoryRecord(i).Description)
     end
 
-    local CP = q:find('"', EP + 1)
-    if not CP then
-        return nil
-    end
+    local encodedText = mainForm.Function[1](descriptionList.Text)
 
-    return q:sub(EP + 1, CP - 1)
-end, function(extralongstring)
-    local lines = {}
-    for line in extralongstring:gmatch("[^\n]+") do
-        table.insert(lines, line)
-    end
-    return lines
-end}
+    local internet = getInternet()
+    local serviceURL = "https://clients5.google.com/translate_a/t?client=dict-chrome-ex"
+    local sourceLang = mainForm.FromSelecta.Text
+    local targetLang = mainForm.ToSelecta.Text
 
-TForm.SrvSelecta = createComboBox(TForm)
-TForm.SrvSelecta.setPosition(25, 100)
-TForm.SrvSelecta.setWidth(400)
-TForm.SrvSelecta.Text = [[Google Translate 5]]
-TForm.SrvSelecta.Items.add("Google Translate 5")
-TForm.SrvSelecta.ReadOnly = true
+    local requestURL =
+        serviceURL ..
+        "&sl=" .. sourceLang ..
+        "&tl=" .. targetLang ..
+        "&q=" .. encodedText
 
-TForm.FromSelecta = createComboBox(TForm)
-TForm.FromSelecta.setPosition(25, 185)
-TForm.FromSelecta.setWidth(400)
-TForm.FromSelecta.Text = [[auto]]
-TForm.FromSelecta.Items.add("auto")
-TForm.FromSelecta.Items.add("lt")
-TForm.FromSelecta.Items.add("en")
-TForm.FromSelecta.Items.add("de")
-TForm.FromSelecta.Items.add("fr")
-TForm.FromSelecta.Items.add("ja")
-TForm.FromSelecta.Items.add("zh-TW")
-TForm.FromSelecta.Items.add("zh-CN")
-TForm.FromSelecta.Items.add("ko")
-TForm.FromSelecta.Items.add("ru")
-TForm.FromSelecta.Items.add("th")
-TForm.FromSelecta.Items.add("uk")
-TForm.FromSelecta.ReadOnly = true
+    local response = internet.getURL(requestURL)
+    local translatedText = mainForm.Function[2](response)
 
-TForm.ToSelecta = createComboBox(TForm)
-TForm.ToSelecta.setPosition(25, 275)
-TForm.ToSelecta.setWidth(400)
-TForm.ToSelecta.Text = [[lt]]
-TForm.ToSelecta.Items.add("lt")
-TForm.ToSelecta.Items.add("en")
-TForm.ToSelecta.Items.add("de")
-TForm.ToSelecta.Items.add("fr")
-TForm.ToSelecta.Items.add("ja")
-TForm.ToSelecta.Items.add("zh-TW")
-TForm.ToSelecta.Items.add("zh-CN")
-TForm.ToSelecta.Items.add("ko")
-TForm.ToSelecta.Items.add("ru")
-TForm.ToSelecta.Items.add("th")
-TForm.ToSelecta.Items.add("uk")
-TForm.ToSelecta.ReadOnly = true
+    local outputList = createStringlist()
+    outputList.add(translatedText:gsub("\\r\\r\\n", "\n"))
 
-TForm.RunSrv = createButton(TForm)
-TForm.RunSrv.setHeight(50)
-TForm.RunSrv.setWidth(200)
-TForm.RunSrv.setCaption("Try Translate")
-TForm.RunSrv.setPosition(25, 400)
-
-TForm.RunSrv.onClick = function()
-
-    local csl = createStringlist()
-    for p = 0, AddressList.Count - 1 do
-        csl.add(AddressList.getMemoryRecord(p).Description)
-    end
-
-    local FI = TForm.Function[1](csl.Text)
-
-    local TEST = getInternet()
-    local SERVICE_URL = [[https://clients5.google.com/translate_a/t?client=dict-chrome-ex]]
-    local TRANSLATE_FROM_PREFIX = [[&sl=]]
-    local TRANSLATE_FROM = TForm.FromSelecta.Text
-    local TRANSLATE_TO_PREFIX = [[&tl=]]
-    local TRANSLATE_TO = TForm.ToSelecta.Text
-    local USER_QUERY_PREFIX = [[&q=]]
-    local URL = SERVICE_URL .. TRANSLATE_FROM_PREFIX .. TRANSLATE_FROM .. TRANSLATE_TO_PREFIX .. TRANSLATE_TO ..
-                    USER_QUERY_PREFIX .. FI
-    local SO = TEST.getURL(URL)
-    local G5 = TForm.Function[2](SO)
-    local cslout = createStringlist()
-    cslout.add(G5:gsub("\\r\\r\\n", "\n"))
     createTimer(5000, function()
-        TForm.show();
-        TForm.TASKRUNNING = false
+        mainForm.show()
+        mainForm.TASKRUNNING = false
     end)
 
-    local flex = TForm.Function[3](cslout.Text)
+    local translatedLines = mainForm.Function[3](outputList.Text)
 
-    for p = 0, AddressList.Count - 1 do
-        AddressList.getMemoryRecord(p).Description = flex[p + 1]
+    for i = 0, AddressList.Count - 1 do
+        AddressList.getMemoryRecord(i).Description = translatedLines[i + 1]
     end
-    beep()
 
-    TForm.hide()
-    TForm.TASKRUNNING = true
+    beep()
+    mainForm.hide()
+    mainForm.TASKRUNNING = true
 end
 
-TForm.ManAtSrv = createButton(TForm)
-TForm.ManAtSrv.setHeight(50)
-TForm.ManAtSrv.setWidth(200)
-TForm.ManAtSrv.setCaption("Manually")
-TForm.ManAtSrv.setPosition(225, 400)
-TForm.ManAtSrv.onClick = function()
 
+local manualButton = createButton(mainForm)
+manualButton.setHeight(50)
+manualButton.setWidth(200)
+manualButton.setCaption("Manually")
+manualButton.setPosition(225, 400)
+mainForm.ManAtSrv = manualButton
 
+manualButton.onClick = function()
     if not TTForm then
         TTForm = createForm()
+        TTForm.setCaption("Description Editor")
+        TTForm.setSize(500, 500)
         TTForm.onClose = function()
             TTForm.hide()
         end
-        TTForm.setCaption("Description Editor")
-        TTForm.setSize(500, 500)
 
-        TTMemo = createMemo(TTForm)
-        TTMemo.setSize(500, 400)
-        TTMemo.ScrollBars = 3
-        TTMemo.WordWrap = false
-        TTMemo.ReadOnly = false
-        TTGetText = createButton(TTForm)
-        TTGetText.setWidth(200)
-        TTGetText.setHeight(50)
-        TTGetText.setPosition(25, 400)
-        TTGetText.setCaption("Get Text")
-        TTGetText.onclick = function()
-            local csl = createStringlist()
-            for p = 0, AddressList.Count - 1 do
-                csl.add(AddressList.getMemoryRecord(p).Description)
+        local editorMemo = createMemo(TTForm)
+        editorMemo.setSize(500, 400)
+        editorMemo.ScrollBars = 3
+        editorMemo.WordWrap = false
+        editorMemo.ReadOnly = false
+        TTMemo = editorMemo
+
+        local getTextButton = createButton(TTForm)
+        getTextButton.setWidth(200)
+        getTextButton.setHeight(50)
+        getTextButton.setPosition(25, 400)
+        getTextButton.setCaption("Get Text")
+        getTextButton.onclick = function()
+            local list = createStringlist()
+            for i = 0, AddressList.Count - 1 do
+                list.add(AddressList.getMemoryRecord(i).Description)
             end
-            TTMemo.Lines.Text = csl.Text
-            csl.destroy()
+            editorMemo.Lines.Text = list.Text
+            list.destroy()
         end
 
-        TTSetText = createButton(TTForm)
-        TTSetText.setWidth(200)
-        TTSetText.setHeight(50)
-        TTSetText.setPosition(225, 400)
-        TTSetText.setCaption("Set Text")
-        TTSetText.onclick = function()
-            for p = 0, AddressList.Count - 1 do
-                AddressList.getMemoryRecord(p).Description = TTMemo.Lines[p]
+        local setTextButton = createButton(TTForm)
+        setTextButton.setWidth(200)
+        setTextButton.setHeight(50)
+        setTextButton.setPosition(225, 400)
+        setTextButton.setCaption("Set Text")
+        setTextButton.onclick = function()
+            for i = 0, AddressList.Count - 1 do
+                AddressList.getMemoryRecord(i).Description = editorMemo.Lines[i]
             end
         end
-        TTPasText = createButton(TTForm)
-        TTPasText.setWidth(200)
-        TTPasText.setHeight(50)
-        TTPasText.setPosition(25, 450)
-        TTPasText.setCaption("Paste")
-        TTPasText.OnClick = function()
-            TTMemo.Lines.Text = readFromClipboard()
+
+        local pasteButton = createButton(TTForm)
+        pasteButton.setWidth(200)
+        pasteButton.setHeight(50)
+        pasteButton.setPosition(25, 450)
+        pasteButton.setCaption("Paste")
+        pasteButton.OnClick = function()
+            editorMemo.Lines.Text = readFromClipboard()
         end
 
-        TTPasTText = createButton(TTForm)
-        TTPasTText.setWidth(200)
-        TTPasTText.setHeight(50)
-        TTPasTText.setPosition(225, 450)
-        TTPasTText.setCaption("Tweak Text")
-        TTPasTText.OnClick = function()
-            TTMemo.WordWrap = true
-            TTMemo.WordWrap = false
+        local tweakButton = createButton(TTForm)
+        tweakButton.setWidth(200)
+        tweakButton.setHeight(50)
+        tweakButton.setPosition(225, 450)
+        tweakButton.setCaption("Tweak Text")
+        tweakButton.OnClick = function()
+            editorMemo.WordWrap = true
+            editorMemo.WordWrap = false
         end
-
     else
-        TTForm.Show()
+        TTForm.show()
     end
 end
